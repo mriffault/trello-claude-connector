@@ -51,7 +51,8 @@ class Logger {
       ...(context && { context })
     };
 
-    console.log(JSON.stringify(logEntry));
+    // MCP servers must use stderr for logging, stdout is reserved for JSON-RPC
+    console.error(JSON.stringify(logEntry));
   }
 
   debug(message: string, context?: LogContext) {
