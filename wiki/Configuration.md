@@ -1,23 +1,51 @@
 # Configuration Reference
 
-This guide provides comprehensive configuration options and settings for Trello Desktop MCP.
+This guide provides comprehensive configuration options and settings for Trello MCP.
 
 ## Basic Configuration
 
-### Claude Desktop Configuration
+### MCP Client Configuration
 
-The primary configuration for Trello Desktop MCP is done through Claude Desktop's MCP configuration file.
+Trello MCP works with any MCP-compatible client. Below are configuration paths and formats for popular clients.
 
 #### Configuration File Locations
 
-| Platform | Configuration File Path |
-|----------|------------------------|
-| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
-| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+| Client | Platform | Configuration File Path |
+|--------|----------|------------------------|
+| **Claude Desktop** | macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Claude Desktop** | Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Claude Desktop** | Linux | `~/.config/Claude/claude_desktop_config.json` |
+| **Claude Code** | All | Project `.mcp.json` or via `claude mcp add` CLI |
+| **Gemini CLI** | All | `~/.gemini/settings.json` |
 
-#### Basic Configuration Structure
+#### Claude Desktop Configuration
 
+```json
+{
+  "mcpServers": {
+    "trello": {
+      "command": "node",
+      "args": ["/absolute/path/to/trello-desktop-mcp/dist/index.js"],
+      "env": {
+        "TRELLO_API_KEY": "your-api-key-here",
+        "TRELLO_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+#### Claude Code CLI
+
+```bash
+claude mcp add trello -- node /absolute/path/to/trello-desktop-mcp/dist/index.js \
+  -e TRELLO_API_KEY=your-api-key-here \
+  -e TRELLO_TOKEN=your-token-here
+```
+
+#### Gemini CLI Configuration
+
+Edit `~/.gemini/settings.json`:
 ```json
 {
   "mcpServers": {
@@ -84,7 +112,7 @@ The primary configuration for Trello Desktop MCP is done through Claude Desktop'
 
 1. On the same page, click the **Token** link next to "To read a user's private information and to update, create and delete a user's boards and organizations."
 2. Authorize the application with these settings:
-   - **Application Name**: Trello Desktop MCP
+   - **Application Name**: Trello MCP
    - **Scope**: Read and Write
    - **Expiration**: Never (recommended for personal use)
 3. Copy the generated token (64+ character string)
@@ -100,7 +128,7 @@ Your token should have these permissions:
 ### Security Considerations
 
 - **Never commit credentials to version control**
-- **Store credentials only in Claude Desktop config**
+- **Store credentials only in your MCP client's config**
 - **Regenerate tokens if they may have been exposed**
 - **Use tokens with minimal required permissions**
 - **Consider token expiration for shared systems**

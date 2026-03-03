@@ -1,6 +1,6 @@
-# Trello Desktop MCP
+# Trello MCP
 
-A Model Context Protocol (MCP) server that provides comprehensive Trello integration for Claude Desktop. This server enables Claude to interact with Trello boards, cards, lists, and more through a secure local connection.
+A Model Context Protocol (MCP) server that provides comprehensive Trello integration for any MCP-compatible client — including Claude Desktop, Claude Code, Gemini CLI, and more. This server enables AI assistants to interact with Trello boards, cards, lists, and more through a secure local connection.
 
 ## Features
 
@@ -30,7 +30,7 @@ A Model Context Protocol (MCP) server that provides comprehensive Trello integra
 
 ### Prerequisites
 - Node.js 18+ installed
-- Claude Desktop application
+- An MCP-compatible client (Claude Desktop, Claude Code, Gemini CLI, etc.)
 - Trello account with API credentials
 
 ### Setup Steps
@@ -56,11 +56,17 @@ A Model Context Protocol (MCP) server that provides comprehensive Trello integra
    - Copy your API Key
    - Generate a Token (never expires, read/write access)
 
-5. **Configure Claude Desktop**
-   
+5. **Configure your MCP client**
+
+   Choose the instructions for your client below:
+
+   <details>
+   <summary><strong>Claude Desktop</strong></summary>
+
    Edit your Claude Desktop configuration file:
    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - Linux: `~/.config/Claude/claude_desktop_config.json`
 
    Add the Trello MCP server:
    ```json
@@ -78,7 +84,67 @@ A Model Context Protocol (MCP) server that provides comprehensive Trello integra
    }
    ```
 
-6. **Restart Claude Desktop**
+   Then restart Claude Desktop.
+   </details>
+
+   <details>
+   <summary><strong>Claude Code (CLI)</strong></summary>
+
+   Add the server using the Claude Code CLI:
+   ```bash
+   claude mcp add trello -- node /absolute/path/to/trello-desktop-mcp/dist/index.js \
+     -e TRELLO_API_KEY=your-api-key-here \
+     -e TRELLO_TOKEN=your-token-here
+   ```
+
+   Or add it to your project's `.mcp.json`:
+   ```json
+   {
+     "mcpServers": {
+       "trello": {
+         "command": "node",
+         "args": ["/absolute/path/to/trello-desktop-mcp/dist/index.js"],
+         "env": {
+           "TRELLO_API_KEY": "your-api-key-here",
+           "TRELLO_TOKEN": "your-token-here"
+         }
+       }
+     }
+   }
+   ```
+   </details>
+
+   <details>
+   <summary><strong>Gemini CLI</strong></summary>
+
+   Edit your Gemini CLI settings file at `~/.gemini/settings.json`:
+   ```json
+   {
+     "mcpServers": {
+       "trello": {
+         "command": "node",
+         "args": ["/absolute/path/to/trello-desktop-mcp/dist/index.js"],
+         "env": {
+           "TRELLO_API_KEY": "your-api-key-here",
+           "TRELLO_TOKEN": "your-token-here"
+         }
+       }
+     }
+   }
+   ```
+   </details>
+
+   <details>
+   <summary><strong>Other MCP Clients</strong></summary>
+
+   Any MCP-compatible client that supports stdio transport can use this server. You need to configure it to:
+   1. Run `node /absolute/path/to/trello-desktop-mcp/dist/index.js`
+   2. Set environment variables `TRELLO_API_KEY` and `TRELLO_TOKEN`
+
+   Refer to your client's documentation for the exact configuration format.
+   </details>
+
+6. **Restart your MCP client** to pick up the new configuration.
 
 ## Available Tools
 
@@ -113,7 +179,7 @@ The MCP server provides 19 tools organized into three phases:
 
 ## Usage Examples
 
-Once configured, you can use natural language with Claude to interact with Trello:
+Once configured, you can use natural language with your AI assistant to interact with Trello:
 
 ```
 "Show me all my Trello boards"
@@ -134,7 +200,7 @@ The server implements the Model Context Protocol (MCP), which provides:
 - Automatic credential management
 
 ### Security
-- API credentials are stored locally in Claude Desktop's config
+- API credentials are stored locally in your MCP client's config
 - No credentials are transmitted over the network
 - All Trello API calls use HTTPS
 - Rate limiting is respected with automatic retry logic
@@ -150,7 +216,7 @@ The server implements the Model Context Protocol (MCP), which provides:
 ### Project Structure
 ```
 ├── src/
-│   ├── index.ts          # Main entry point for Claude Desktop
+│   ├── index.ts          # Main MCP server entry point
 │   ├── server.ts         # Alternative server implementation
 │   ├── tools/            # Tool implementations
 │   │   ├── boards.ts     # Board-related tools
@@ -181,7 +247,7 @@ npm run type-check
 
 ### Testing
 The server includes comprehensive error handling and validation. Test your setup by:
-1. Checking Claude Desktop's MCP connection status
+1. Checking your MCP client's connection status
 2. Running a simple command like "Show me my Trello boards"
 3. Verifying the response includes your board data
 
@@ -190,7 +256,7 @@ The server includes comprehensive error handling and validation. Test your setup
 ### Common Issues
 
 1. **"No Trello tools available"**
-   - Ensure Claude Desktop is fully restarted after configuration
+   - Ensure your MCP client is fully restarted after configuration
    - Check that the path in config points to `dist/index.js`
    - Verify the file exists and is built
 
@@ -205,7 +271,7 @@ The server includes comprehensive error handling and validation. Test your setup
    - Consider reducing request frequency
 
 ### Debug Logging
-Check MCP logs at:
+Check your MCP client's logs for connection and error details. For Claude Desktop, logs are at:
 - macOS: `~/Library/Logs/Claude/mcp-server-trello.log`
 - Windows: `%APPDATA%\Claude\Logs\mcp-server-trello.log`
 
@@ -225,4 +291,4 @@ MIT License - see LICENSE file for details
 
 - Built with the [Model Context Protocol SDK](https://github.com/anthropics/mcp)
 - Uses the [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/)
-- Designed for [Claude Desktop](https://claude.ai/download)
+- Compatible with [Claude Desktop](https://claude.ai/download), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Gemini CLI](https://github.com/google-gemini/gemini-cli), and other MCP clients
