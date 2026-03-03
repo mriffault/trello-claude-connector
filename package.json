@@ -1,7 +1,7 @@
 {
-  "name": "trello-desktop-mcp",
+  "name": "trello-mcp",
   "version": "1.0.0",
-  "description": "Trello integration for Claude Desktop via Model Context Protocol (MCP)",
+  "description": "Trello integration for any MCP-compatible client via Model Context Protocol (MCP)",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -16,13 +16,14 @@
     "model-context-protocol",
     "trello",
     "claude",
-    "claude-desktop",
+    "gemini",
+    "ai-assistant",
     "api",
     "integration",
     "productivity",
     "project-management"
   ],
-  "author": "Trello Desktop MCP Contributors",
+  "author": "Trello MCP Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",

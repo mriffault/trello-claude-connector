@@ -10,7 +10,7 @@ import {
   ListPromptsRequestSchema 
 } from '@modelcontextprotocol/sdk/types.js';
 
-// Desktop-specific: Check for local credentials
+// Read credentials from environment variables
 const TRELLO_API_KEY = process.env.TRELLO_API_KEY;
 const TRELLO_TOKEN = process.env.TRELLO_TOKEN;
 
@@ -79,7 +79,7 @@ import {
 // Create server instance
 const server = new Server(
   {
-    name: 'trello-mcp-desktop',
+    name: 'trello-mcp',
     version: '1.0.0',
   },
   {
@@ -101,7 +101,7 @@ server.setRequestHandler(InitializeRequestSchema, async () => {
       prompts: {}
     },
     serverInfo: {
-      name: 'trello-mcp-desktop',
+      name: 'trello-mcp',
       version: '1.0.0'
     }
   };

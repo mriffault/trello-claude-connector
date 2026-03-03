@@ -1,13 +1,13 @@
 # Installation Guide
 
-This guide will walk you through setting up Trello Desktop MCP with Claude Desktop.
+This guide will walk you through setting up Trello MCP with your MCP-compatible client.
 
 ## Prerequisites
 
 Before you begin, ensure you have:
 
 - **Node.js 18+** installed on your system
-- **Claude Desktop** application installed
+- An **MCP-compatible client** (Claude Desktop, Claude Code, Gemini CLI, etc.)
 - An active **Trello account** with API access
 - Basic familiarity with command line operations
 
@@ -32,7 +32,7 @@ npm install
 npm run build
 ```
 
-This creates the compiled JavaScript files in the `dist/` directory that Claude Desktop will use.
+This creates the compiled JavaScript files in the `dist/` directory that your MCP client will use.
 
 ## Step 2: Obtain Trello API Credentials
 
@@ -52,19 +52,19 @@ This creates the compiled JavaScript files in the `dist/` directory that Claude 
 
 > **Security Note**: Your API credentials provide full access to your Trello account. Keep them secure and never share them publicly.
 
-## Step 3: Configure Claude Desktop
+## Step 3: Configure Your MCP Client
 
-### 3.1 Locate Configuration File
+Choose the instructions for your client below.
 
-Find your Claude Desktop configuration file:
+### 3.1 Claude Desktop
+
+Locate your configuration file:
 
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
-### 3.2 Add MCP Server Configuration
-
-Edit the configuration file and add the Trello MCP server:
+Add the Trello MCP server:
 
 ```json
 {
@@ -81,42 +81,54 @@ Edit the configuration file and add the Trello MCP server:
 }
 ```
 
-**Important Configuration Notes**:
+### 3.2 Claude Code (CLI)
 
-1. **Use Absolute Paths**: Replace `/absolute/path/to/trello-desktop-mcp/dist/index.js` with the full path to your installation
-2. **Replace Credentials**: Insert your actual API key and token from Step 2
-3. **JSON Format**: Ensure proper JSON formatting with no trailing commas
+```bash
+claude mcp add trello -- node /absolute/path/to/trello-desktop-mcp/dist/index.js \
+  -e TRELLO_API_KEY=your-api-key-here \
+  -e TRELLO_TOKEN=your-token-here
+```
 
-### 3.3 Example Configuration
+### 3.3 Gemini CLI
 
-Here's a complete example configuration:
+Edit `~/.gemini/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "trello": {
-      "command": "node", 
-      "args": ["/Users/username/Projects/trello-desktop-mcp/dist/index.js"],
+      "command": "node",
+      "args": ["/absolute/path/to/trello-desktop-mcp/dist/index.js"],
       "env": {
-        "TRELLO_API_KEY": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
-        "TRELLO_TOKEN": "x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f5g6h7i8j9k0"
+        "TRELLO_API_KEY": "your-api-key-here",
+        "TRELLO_TOKEN": "your-token-here"
       }
     }
   }
 }
 ```
 
-## Step 4: Restart Claude Desktop
+### 3.4 Other MCP Clients
 
-1. **Completely quit** Claude Desktop (not just close the window)
-2. **Restart** Claude Desktop
+Any client supporting MCP stdio transport can use this server. Configure it to run `node /absolute/path/to/trello-desktop-mcp/dist/index.js` with environment variables `TRELLO_API_KEY` and `TRELLO_TOKEN`.
+
+**Important Configuration Notes**:
+
+1. **Use Absolute Paths**: Replace `/absolute/path/to/trello-desktop-mcp/dist/index.js` with the full path to your installation
+2. **Replace Credentials**: Insert your actual API key and token from Step 2
+3. **JSON Format**: Ensure proper JSON formatting with no trailing commas
+
+## Step 4: Restart Your MCP Client
+
+1. **Completely quit** your MCP client (not just close the window)
+2. **Restart** it
 3. Wait for the application to fully load
 
 ## Step 5: Verify Installation
 
 ### 5.1 Test Basic Connectivity
 
-In Claude Desktop, try these commands to verify the installation:
+In your MCP client, try these commands to verify the installation:
 
 ```
 Show me my Trello boards
@@ -142,7 +154,7 @@ You should see all 20 Trello tools listed and organized by category.
 
 1. **Path Issue**: Verify the path to `dist/index.js` is absolute and correct
 2. **Build Issue**: Run `npm run build` again to ensure the dist folder exists
-3. **Restart Required**: Completely restart Claude Desktop
+3. **Restart Required**: Completely restart your MCP client
 4. **File Permissions**: Ensure Node.js can read the files
 
 ### Issue: "Invalid credentials" 
@@ -177,9 +189,9 @@ You should see all 20 Trello tools listed and organized by category.
 - [ ] Repository cloned and dependencies installed
 - [ ] Project built successfully (`dist/` folder exists)
 - [ ] Trello API key and token obtained
-- [ ] Claude Desktop configuration file updated
+- [ ] MCP client configuration file updated
 - [ ] Absolute paths used in configuration
-- [ ] Claude Desktop completely restarted
+- [ ] MCP client completely restarted
 - [ ] Basic Trello commands working
 
 ## Next Steps
@@ -195,7 +207,7 @@ Once installation is complete:
 If you encounter issues:
 
 1. Check the [Troubleshooting Guide](Troubleshooting)
-2. Review Claude Desktop's MCP logs
+2. Review your MCP client's logs
 3. [Open an issue](https://github.com/yourusername/trello-desktop-mcp/issues) with detailed error information
 
 ---
