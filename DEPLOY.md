@@ -40,7 +40,7 @@ TRELLO_API_KEY=...
 TRELLO_TOKEN=...
 PUBLIC_HOSTNAME=mcp.example.com
 PUBLIC_BASE_URL=https://mcp.example.com
-ALLOWED_HOSTS=mcp.example.com,127.0.0.1:3000
+ALLOWED_HOSTS=mcp.example.com,127.0.0.1
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 ALLOWED_GOOGLE_EMAIL=you@gmail.com
@@ -163,7 +163,7 @@ the latest code and rebuilds the container on the VPS.
 
 | Symptom | Likely cause |
 |---------|--------------|
-| Healthcheck fails, logs show `403 Invalid host` | `127.0.0.1:3000` missing from `ALLOWED_HOSTS` |
+| Healthcheck fails, logs show `403 Invalid Host: 127.0.0.1` | `127.0.0.1` missing from `ALLOWED_HOSTS` (note: hostnames only, no ports) |
 | Let's Encrypt `acme.json` errors | DNS not propagated, or port 80 blocked by firewall |
 | Google redirects with error `redirect_uri_mismatch` | The URI in Google Cloud Console doesn't exactly match `${PUBLIC_BASE_URL}/oauth/google/callback` (scheme, trailing slash, case) |
 | `403 Access denied for ...@gmail.com` | Email doesn't match `ALLOWED_GOOGLE_EMAIL` (check case, typos) |

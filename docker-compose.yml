@@ -22,9 +22,9 @@ services:
     networks:
       - traefik-proxy
     healthcheck:
-      # fetch() is globally available in Node 20. The Host header is rewritten
-      # by the Node HTTP client to the URL hostname (127.0.0.1:3000), which is
-      # why ALLOWED_HOSTS in .env must include "127.0.0.1:3000".
+      # fetch() is globally available in Node 20. The SDK's host-header
+      # middleware compares port-agnostically, so ALLOWED_HOSTS in .env only
+      # needs the hostname "127.0.0.1" (no port) for this loopback call to pass.
       test:
         - CMD
         - node
