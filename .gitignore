@@ -53,3 +53,6 @@ config.local.json
 *secret*
 *token*
 *apikey*
+
+# SQLite data directory (OAuth tokens)
+/data/

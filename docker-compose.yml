@@ -1,0 +1,60 @@
+# Deploy on a VPS that already runs a Traefik stack on the `traefik-proxy`
+# external network. Copy .env.example → .env and fill it in before `docker
+# compose up -d`. See DEPLOY.md for the full procedure.
+
+services:
+  trello-mcp:
+    build: .
+    image: trello-mcp:latest
+    container_name: trello-mcp
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Values that must be set for the container runtime context,
+      # regardless of what's in .env.
+      HOST: 0.0.0.0
+      PORT: 3000
+      AUTH_DB_PATH: /app/data/auth.db
+      TRUST_PROXY: "1"
+    volumes:
+      - trello-mcp-data:/app/data
+    networks:
+      - traefik-proxy
+    healthcheck:
+      # fetch() is globally available in Node 20. The Host header is rewritten
+      # by the Node HTTP client to the URL hostname (127.0.0.1:3000), which is
+      # why ALLOWED_HOSTS in .env must include "127.0.0.1:3000".
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-proxy
+      # HTTPS router
+      - traefik.http.routers.trello-mcp.rule=Host(`${PUBLIC_HOSTNAME}`)
+      - traefik.http.routers.trello-mcp.entrypoints=websecure
+      - traefik.http.routers.trello-mcp.tls=true
+      - traefik.http.routers.trello-mcp.tls.certresolver=letsencrypt
+      - traefik.http.routers.trello-mcp.service=trello-mcp
+      # Service: which container port Traefik forwards to
+      - traefik.http.services.trello-mcp.loadbalancer.server.port=3000
+      # HTTP → HTTPS redirect
+      - traefik.http.routers.trello-mcp-http.rule=Host(`${PUBLIC_HOSTNAME}`)
+      - traefik.http.routers.trello-mcp-http.entrypoints=web
+      - traefik.http.routers.trello-mcp-http.middlewares=trello-mcp-redirect
+      - traefik.http.middlewares.trello-mcp-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.trello-mcp-redirect.redirectscheme.permanent=true
+
+networks:
+  traefik-proxy:
+    external: true
+
+volumes:
+  trello-mcp-data:

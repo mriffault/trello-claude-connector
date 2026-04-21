@@ -1,0 +1,54 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # The upstream project does not commit package-lock.json so `npm ci`
+      # is not available. Swap to `npm install` until a lockfile is added.
+      - run: npm install --include=dev
+      - run: npm run type-check
+      - run: npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd ~/trello-claude-connector
+            git pull --ff-only origin main
+            docker compose up -d --build
+
+            # Wait up to 60s for the container to become healthy.
+            for i in $(seq 1 12); do
+              if docker compose exec -T trello-mcp node -e "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
+                echo "App healthy after attempt ${i}/12"
+                exit 0
+              fi
+              echo "Attempt ${i}/12: app not healthy yet..."
+              sleep 5
+            done
+
+            echo "App did not become healthy within 60s — dumping logs"
+            docker compose logs trello-mcp --tail 50
+            exit 1
