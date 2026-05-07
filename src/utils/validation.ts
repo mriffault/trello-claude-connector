@@ -76,6 +76,57 @@ export const deleteCardSchema = z.object({
   cardId: trelloIdSchema
 });
 
+export const addAttachmentUrlSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  token: z.string().min(1, 'Token is required'),
+  cardId: trelloIdSchema,
+  url: z.string().url('Must be a valid URL (http(s)://...)'),
+  name: z.string().max(256, 'Attachment name too long').optional(),
+  mimeType: z.string().max(256).optional(),
+  setCover: z.boolean().optional()
+});
+
+export const addAttachmentFileSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  token: z.string().min(1, 'Token is required'),
+  cardId: trelloIdSchema,
+  filePath: z.string().min(1, 'filePath is required'),
+  name: z.string().max(256, 'Attachment name too long').optional(),
+  mimeType: z.string().max(256).optional(),
+  setCover: z.boolean().optional()
+});
+
+export const getAttachmentSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  token: z.string().min(1, 'Token is required'),
+  cardId: trelloIdSchema,
+  attachmentId: trelloIdSchema,
+  fields: z.array(z.string()).optional()
+});
+
+export const deleteAttachmentSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  token: z.string().min(1, 'Token is required'),
+  cardId: trelloIdSchema,
+  attachmentId: trelloIdSchema
+});
+
+export function validateAddAttachmentUrl(data: unknown) {
+  return addAttachmentUrlSchema.parse(data);
+}
+
+export function validateAddAttachmentFile(data: unknown) {
+  return addAttachmentFileSchema.parse(data);
+}
+
+export function validateGetAttachment(data: unknown) {
+  return getAttachmentSchema.parse(data);
+}
+
+export function validateDeleteAttachment(data: unknown) {
+  return deleteAttachmentSchema.parse(data);
+}
+
 export function validateCredentials(data: unknown) {
   return credentialsSchema.parse(data);
 }

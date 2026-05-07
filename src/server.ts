@@ -57,6 +57,16 @@ import {
   trelloGetBoardLabelsTool,
   handleTrelloGetBoardLabels
 } from './tools/advanced.js';
+import {
+  trelloAddAttachmentUrlTool,
+  handleTrelloAddAttachmentUrl,
+  trelloAddAttachmentFileTool,
+  handleTrelloAddAttachmentFile,
+  trelloGetAttachmentTool,
+  handleTrelloGetAttachment,
+  trelloDeleteAttachmentTool,
+  handleTrelloDeleteAttachment
+} from './tools/attachments.js';
 
 export function createMCPServer() {
   const server = new Server(
@@ -116,7 +126,12 @@ export function createMCPServer() {
         trelloGetCardAttachmentsTool,
         trelloGetCardChecklistsTool,
         trelloGetBoardMembersTool,
-        trelloGetBoardLabelsTool
+        trelloGetBoardLabelsTool,
+        // Phase 4: Attachments
+        trelloAddAttachmentUrlTool,
+        trelloAddAttachmentFileTool,
+        trelloGetAttachmentTool,
+        trelloDeleteAttachmentTool
       ],
     };
   });
@@ -200,7 +215,20 @@ export function createMCPServer() {
       
       case 'trello_get_board_labels':
         return await handleTrelloGetBoardLabels(args);
-      
+
+      // Phase 4: Attachments
+      case 'trello_add_attachment_url':
+        return await handleTrelloAddAttachmentUrl(args);
+
+      case 'trello_add_attachment_file':
+        return await handleTrelloAddAttachmentFile(args);
+
+      case 'trello_get_attachment':
+        return await handleTrelloGetAttachment(args);
+
+      case 'trello_delete_attachment':
+        return await handleTrelloDeleteAttachment(args);
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
