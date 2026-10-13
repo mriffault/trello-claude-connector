@@ -60,7 +60,7 @@ jobs:
           # La clé est restreinte côté serveur à une commande forcée :
           # aucune commande n'est envoyée, le serveur sait quoi déployer.
           ssh -T -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=20 -o ConnectionAttempts=3 \
             "$VPS_USER@$VPS_HOST"
 
       - name: Fermer le tunnel
