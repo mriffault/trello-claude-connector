@@ -1,6 +1,6 @@
 # Déploiement sur le VPS par GitHub Actions
 
-> **Document partagé.** Ce fichier est copié à l'identique dans chaque projet déployé sur le VPS. Toute correction se reporte dans les autres dépôts. Il ne contient volontairement aucune valeur propre au serveur ou à un projet : ces valeurs sont dans le workflow et l'`AGENTS.md` de chaque dépôt, et sur le serveur. Dernière mise à jour : 13 octobre 2026.
+> **Document partagé.** Ce fichier est copié à l'identique dans chaque projet déployé sur le VPS. La version de référence est dans le dépôt d'infrastructure du serveur : toute correction s'y fait d'abord, puis se reporte dans les autres dépôts. Il ne contient volontairement aucune valeur propre au serveur ou à un projet : ces valeurs sont dans le workflow et l'`AGENTS.md` de chaque dépôt, et sur le serveur. Dernière mise à jour : 13 octobre 2026.
 
 ## En bref
 
@@ -70,6 +70,24 @@ Adaptations permises :
 - mettre une clé privée ou un mot de passe dans le YAML. Seules des valeurs publiques vont dans `env:`.
 
 Changer **ce que fait** un déploiement (une commande de migration, un autre fichier compose, un contrôle de santé) se fait dans `deploy-project`, pas dans le workflow. C'est une modification du serveur, faite par l'humain ou l'orchestrateur, jamais par un agent de code.
+
+## Ce qui ne passe pas par le déploiement automatique
+
+Le déploiement automatique ne doit transporter que des changements qui se rejouent par un simple `docker compose up -d --build` : code, images, variables, services. **Une modification de la définition d'un réseau ou d'un volume Compose** (sous-réseau, pilote, options, renommage) oblige Compose à supprimer et recréer la ressource, et il le fait mal : les conteneurs qu'il ne recrée pas sont rebranchés sans leurs alias de service, et les noms comme `postgres` cessent de se résoudre (constaté avec Compose v5.1.0, au prix d'une coupure de production).
+
+Ces changements s'appliquent à la main sur le serveur, dans une fenêtre choisie, **avant** de fusionner :
+
+```bash
+sudo -u deploy -i
+cd ~/<projet>
+docker compose <fichiers et options du projet> down     # les volumes nommés sont conservés
+git fetch && git checkout <branche de la PR> -- <fichiers compose modifiés>
+docker compose <fichiers et options du projet> up -d
+# vérifier, puis remettre le clone propre avant la fusion :
+git checkout -- . && git status
+```
+
+Le déploiement qui suit la fusion ne trouve alors plus rien à recréer. Pour savoir à l'avance ce que Compose fera, `docker compose ... --dry-run up -d` : une ligne `Network ... Removed` ou `Volume ... Removed` signale un changement à faire à la main.
 
 ## Secrets GitHub
 
@@ -151,9 +169,10 @@ Révoquer un dépôt : retirer sa ligne de `authorized_keys`, retirer son pair (
 | `Un déploiement de ... est déjà en cours` (code 75) | un déploiement précédent tourne encore | attendre, ou chercher un processus bloqué sur le serveur |
 | `git pull --ff-only` refusé | le clone du serveur a des modifications locales ou un historique divergent | `sudo -u deploy git -C /home/deploy/<projet> status` |
 | `projet inconnu` | cas absent de `deploy-project` | ajouter le cas (section précédente) |
+| un service ne trouve pas un autre par son nom (`Can't reach ... postgres:5432`) après un changement de réseau | conteneurs rebranchés sans alias | `docker inspect <conteneur> -f '{{range .NetworkSettings.Networks}}{{.Aliases}}{{end}}'` vide : recréer ces conteneurs (`up -d --force-recreate <services>`), les volumes nommés sont conservés |
 
 ## Limites connues
 
 - `deploy` équivaut à root (groupe `docker`). La commande forcée limite ce qu'une clé fuitée permet, pas ce que permettrait un dépôt compromis : un commit malveillant poussé sur `main` sera déployé.
-- `deploy-project` n'est versionné nulle part ailleurs que sur le serveur.
+- `deploy-project` est versionné dans le dépôt d'infrastructure du serveur, mais installé à la main : le dépôt et le serveur peuvent diverger si une modification n'est pas reportée.
 - Ce document est copié dans plusieurs dépôts et peut diverger.
