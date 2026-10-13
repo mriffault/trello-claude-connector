@@ -1,4 +1,5 @@
 # CLAUDE.md
+@AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -16,6 +17,14 @@ npm run type-check     # TypeScript check without emitting
 ```
 
 There is no test runner, linter, or formatter configured. Validate changes with `npm run type-check`.
+
+## Deployment pattern (build-on-VPS, like jobhunter)
+
+- This fork also ships an HTTP transport (`src/http-server.ts`, `npm run start:http`), run in Docker on the VPS. The stdio entry point (`src/index.ts`) remains for local MCP clients.
+- Repo cloned on the VPS through a GitHub deploy key, in `/home/deploy/trello-claude-connector`. Container `trello-mcp`, port 3000, health check `GET /healthz`, routed by Traefik on the `traefik-proxy` network; persistent data (`auth.db`) lives in the `trello-mcp-data` volume.
+- `.github/workflows/deploy.yml`: job `test` (type-check, build), then job `deploy` through a WireGuard tunnel and a server-side forced command. Everything is described in **`docs/deploiement-vps.md`** (job template, secrets, troubleshooting).
+- No intermediate registry (no GHCR), no PAT to manage.
+- **This repository is public.** The public hostname of the connector is supplied on the server at deploy time and must never be committed, nor `.env`, nor anything from the data volume.
 
 ## Architecture
 

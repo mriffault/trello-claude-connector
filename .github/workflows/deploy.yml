@@ -20,35 +20,51 @@ jobs:
       - run: npm run type-check
       - run: npm run build
 
+  # Déploiement par le tunnel WireGuard du VPS : voir docs/deploiement-vps.md
   deploy:
     needs: test
     runs-on: ubuntu-latest
     environment: prod
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    env:
+      TUNNEL_ADDRESS: 10.88.0.12/32
+      VPS_WG_PUBLIC_KEY: PKkwjYAcSB8oxY3Vob3yVRLIG2BLPRodSottoBUHAQs=
+      VPS_WG_ENDPOINT: 147.93.90.13:51820
+      VPS_SSH_HOST_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF2ugj6H2bHHT8cXO6/19vx73wW8hRbKvadVWGHJUGqm
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          script: |
-            set -euo pipefail
-            cd ~/trello-claude-connector
-            git pull --ff-only origin main
-            docker compose up -d --build
+      - name: Ouvrir le tunnel WireGuard
+        env:
+          WG_PRIVATE_KEY: ${{ secrets.WG_PRIVATE_KEY }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq wireguard-tools
+          printf '[Interface]\nPrivateKey = %s\nAddress = %s\n\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = 10.88.0.1/32\nPersistentKeepalive = 25\n' \
+            "$WG_PRIVATE_KEY" "$TUNNEL_ADDRESS" "$VPS_WG_PUBLIC_KEY" "$VPS_WG_ENDPOINT" \
+            | sudo tee /etc/wireguard/wg0.conf > /dev/null
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          sudo wg-quick up wg0
 
-            # Wait up to 60s for the container to become healthy.
-            for i in $(seq 1 12); do
-              if docker compose exec -T trello-mcp node -e "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"; then
-                echo "App healthy after attempt ${i}/12"
-                exit 0
-              fi
-              echo "Attempt ${i}/12: app not healthy yet..."
-              sleep 5
-            done
+      - name: Déployer
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s %s\n' "$VPS_HOST" "$VPS_SSH_HOST_KEY" > ~/.ssh/known_hosts
+          # La clé est restreinte côté serveur à une commande forcée :
+          # aucune commande n'est envoyée, le serveur sait quoi déployer.
+          ssh -T -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$VPS_USER@$VPS_HOST"
 
-            echo "App did not become healthy within 60s — dumping logs"
-            docker compose logs trello-mcp --tail 50
-            exit 1
+      - name: Fermer le tunnel
+        if: always()
+        run: |
+          sudo wg-quick down wg0 || true
+          rm -f ~/.ssh/deploy_key

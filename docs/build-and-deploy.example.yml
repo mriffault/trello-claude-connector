@@ -1,0 +1,80 @@
+# Modèle de workflow : tests puis déploiement sur le VPS par tunnel WireGuard.
+# Voir docs/deploiement-vps.md pour le fonctionnement, les secrets et ce qu'il
+# est permis d'adapter.
+#
+# À copier dans .github/workflows/ en remplaçant :
+#   - le job test par celui du projet ;
+#   - les quatre valeurs entre chevrons du job deploy :
+#       <adresse du dépôt>           : indiquée dans l'AGENTS.md du dépôt
+#       les trois valeurs du serveur : à recopier depuis le workflow d'un dépôt
+#                                      déjà déployé, ou à lire sur le serveur
+# Le reste du job deploy se reprend tel quel.
+
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  # Déploiement par le tunnel WireGuard du VPS : voir docs/deploiement-vps.md
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    env:
+      TUNNEL_ADDRESS: <adresse du dépôt>/32
+      VPS_WG_PUBLIC_KEY: <clé publique WireGuard du serveur>
+      VPS_WG_ENDPOINT: <adresse publique du serveur>:51820
+      VPS_SSH_HOST_KEY: <clé d'hôte ed25519 du serveur>
+    steps:
+      - name: Ouvrir le tunnel WireGuard
+        env:
+          WG_PRIVATE_KEY: ${{ secrets.WG_PRIVATE_KEY }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq wireguard-tools
+          printf '[Interface]\nPrivateKey = %s\nAddress = %s\n\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = 10.88.0.1/32\nPersistentKeepalive = 25\n' \
+            "$WG_PRIVATE_KEY" "$TUNNEL_ADDRESS" "$VPS_WG_PUBLIC_KEY" "$VPS_WG_ENDPOINT" \
+            | sudo tee /etc/wireguard/wg0.conf > /dev/null
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          sudo wg-quick up wg0
+
+      - name: Déployer
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s %s\n' "$VPS_HOST" "$VPS_SSH_HOST_KEY" > ~/.ssh/known_hosts
+          # La clé est restreinte côté serveur à une commande forcée :
+          # aucune commande n'est envoyée, le serveur sait quoi déployer.
+          ssh -T -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$VPS_USER@$VPS_HOST"
+
+      - name: Fermer le tunnel
+        if: always()
+        run: |
+          sudo wg-quick down wg0 || true
+          rm -f ~/.ssh/deploy_key
