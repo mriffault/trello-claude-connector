@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       # The upstream project does not commit package-lock.json so `npm ci`
       # is not available. Swap to `npm install` until a lockfile is added.
       - run: npm install --include=dev

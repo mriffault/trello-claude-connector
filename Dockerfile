@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- Builder stage: full Node image with build tools for native modules ----
-FROM node:20-bookworm AS builder
+FROM node:24.22.1-bookworm AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN npm install --include=dev
 RUN npm prune --omit=dev
 
 # ---- Runtime stage: slim image, non-root user ------------------------------
-FROM node:20-bookworm-slim AS runtime
+FROM node:24.22.1-bookworm-slim AS runtime
 
 ENV NODE_ENV=production
 
